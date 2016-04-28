@@ -13,8 +13,8 @@ script:
 - ./gen_cache.py
 
 before_deploy:
-- export RELEASE_FILENAME=cache-$TRAVIS_TAG.tar.xz
-- tar -cJvf $RELEASE_FILENAME data.json images
+- export RELEASE_FILENAME=cache-$TRAVIS_TAG.zip
+- zip -r9 $RELEASE_FILENAME data.json images
 
 deploy:
   provider: releases

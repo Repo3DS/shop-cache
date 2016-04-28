@@ -141,11 +141,11 @@ def compile_texture(data):
 				y = ((icon_index % 441) % 21) * 48
 
 				img_array[img_index].paste(img, (x, y))
-				data[title][5] = [img_index, icon_index]
+				data[title][5] = icon_index
 				icon_index += 1
 
 	for i, img in enumerate(img_array):
-		img.save("images/test{}.jpg".format(i), quality=90)
+		img.save("images/icons{}.jpg".format(i), quality=90)
 
 
 def filter_titles(titles):
