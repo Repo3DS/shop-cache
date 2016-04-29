@@ -3,7 +3,7 @@ import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
 from binascii import hexlify, unhexlify
 from PIL import Image
-import os, ssl, json
+import os, ssl, json, unicodedata
 
 
 # Client certs
@@ -53,15 +53,22 @@ def get_id_pairs(ids, get_content_id = True):
 	return ret;
 
 
+def normalize_text(input):
+	input = input.translate({ord(i):' ' for i in u"':?!@#$®™"})
+	nfkd_form = unicodedata.normalize('NFKD', input)
+	return u"".join([c for c in nfkd_form if not unicodedata.combining(c)]).lower()
+
+
 def get_title_data(id, uid):
 	# Returns array:
 	# 0 - Title name
-	# 1 - Content UID (as provided by arg)
-	# 2 - Region list
-	# 3 - Country code
-	# 4 - Size
-	# 5 - Icon url (to later be replaced by icon index)
-	# 6 - Crypto seed (sometimes empty '')
+	# 1 - Title normalized for indexing
+	# 2 - Content UID (as provided by arg)
+	# 3 - Region list
+	# 4 - Country code
+	# 5 - Size
+	# 6 - Icon url (to later be replaced by icon index)
+	# 7 - Crypto seed (sometimes empty '')
 
 	# samurai handles metadata actions, including getting a title's info
 	# URL regions are by country instead of geographical regions... for some reason
@@ -107,7 +114,9 @@ def get_title_data(id, uid):
 	except:
 		crypto_seed = ''
 
-	return [title_name, uid, regions, country_code, title_size, icon_url, crypto_seed]
+	title_normalized = normalize_text(title_name)
+
+	return [title_name, title_normalized, uid, regions, country_code, title_size, icon_url, crypto_seed]
 
 
 # Fit 441 48x48 icons per 1024x1024 image
@@ -125,7 +134,7 @@ def compile_texture(data):
 		if not title_data:
 			print("No data? ", title)
 		else:
-			icon_url = title_data[5]
+			icon_url = title_data[6]
 			if icon_url != -1:
 				print(icon_url)
 				res = urllib.request.urlopen(icon_url, context=ctr_context)
@@ -141,7 +150,7 @@ def compile_texture(data):
 				y = ((icon_index % 441) % 21) * 48
 
 				img_array[img_index].paste(img, (x, y))
-				data[title][5] = icon_index
+				data[title][6] = icon_index
 				icon_index += 1
 
 	for i, img in enumerate(img_array):
@@ -172,7 +181,7 @@ def scrape():
 			title_data = get_title_data(titles[i], uid)
 			if title_data:
 				data[titles[i]] = title_data
-				print("Title {} out of {}: {}".format(i+1, len(uid_list), title_data[0]))
+				print("Title {} out of {}: {} ({})".format(i+1, len(uid_list), title_data[0], title_data[1]))
 
 	with open('data.json', 'w') as f:
 		json.dump(data, f, separators=(',', ':'))

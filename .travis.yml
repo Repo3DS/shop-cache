@@ -16,6 +16,10 @@ before_deploy:
 - export RELEASE_FILENAME=cache-$TRAVIS_TAG.zip
 - zip -r9 $RELEASE_FILENAME data.json images
 
+branches:
+  only:
+    - /^r.*/
+    
 deploy:
   provider: releases
   api_key:
