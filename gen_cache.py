@@ -54,7 +54,7 @@ def get_id_pairs(ids, get_content_id = True):
 
 
 def normalize_text(input):
-	input = input.translate({ord(i):' ' for i in u"':?!@#$®™"})
+	input = input.translate({ord(i):' ' for i in u"®™"})
 	nfkd_form = unicodedata.normalize('NFKD', input)
 	return u"".join([c for c in nfkd_form if not unicodedata.combining(c)]).lower()
 
@@ -109,7 +109,7 @@ def get_title_data(id, uid):
 	xml = ET.fromstring(ec_response.read().decode('UTF-8', 'replace'))
 	title_size = int(xml.find("*/content_size").text)
 	try:
-		crypto_seed = xml.find("*/external_seed").text
+		crypto_seed = xml.find(".//external_seed").text
 		print("Seed:", crypto_seed)
 	except:
 		crypto_seed = ''
@@ -128,7 +128,8 @@ def compile_texture(data):
 	global img_index
 	global icon_index
 
-	os.makedirs("images")
+	if not os.path.exists("images"):
+		os.makedirs("images")
 
 	for title, title_data in data.items():
 		if not title_data:
@@ -154,6 +155,7 @@ def compile_texture(data):
 				icon_index += 1
 
 	for i, img in enumerate(img_array):
+		img.save("images/icons{}.png".format(i))
 		img.save("images/icons{}.jpg".format(i), quality=90)
 
 

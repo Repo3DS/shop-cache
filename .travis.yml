@@ -5,16 +5,20 @@ python:
 
 install:
 - pip install -r requirements.txt
+- wget -q https://github.com/Repo3DS/shop-cache/releases/download/r1/textool
 - wget -q $TITLEKEYSURL -O encTitleKeys.bin
 - echo -e $CTRCERT > ctr-common-1.crt
 - echo -e $CTRKEY > ctr-common-1.key
+- chmod +x textool
 
 script:
 - ./gen_cache.py
+- for f in images/*.png; do ./textool $f ${f%.*}.bin; done
 
 before_deploy:
-- export RELEASE_FILENAME=cache-$TRAVIS_TAG.zip
-- zip -r9 $RELEASE_FILENAME data.json images
+- export RELEASE_FILENAME=cache-$TRAVIS_TAG
+- zip -r9 $RELEASE_FILENAME.zip data.json images/*.png images/*.jpg
+- zip -r9 $RELEASE_FILENAME-etc1.zip data.json images/*.bin
 
 branches:
   only:
@@ -24,7 +28,9 @@ deploy:
   provider: releases
   api_key:
     secure: wnfktGRjYfTgk6stabfydX1CJQkm20Bc/Yh1EQ4i5IrZfbUflQ/3w80FnZRHMBh7rUMIeQK7nAWrMlTyygQfrnEswRfMiqlciiFuAU3UznAob6jjesgxDeCR0u2VChfPvuB4XaENKmd6z1Q1tVy6+OmhRoG41zlORYNwO9lbGmLaTsi7OhERATXHzxFXaN0VLzrCLOupfxKZQloRDF2sx3z7Bs0ctIPAkJGkEppn2u7MY+tJkrx73ymB5o/D5XmAHnsKSIGSDxmZbTXlx82i8E1JWwUojVp2d8t4Ag8mRaKVulBPAj8vMfLr5Ug5ABl8oQDoPT0K2kosAFT1KuPJbH7w7cXqGIOf6QiLc4kxB5fQ0DhzdLf1gAD04DXhPevn/zAgZQC8AVgau1vJWAv0omNpso6YTE5cMyYyPwWlgRgo5k8k8Kup3b3ev7qrO0K5aOWgXJrb55Bi1JZ/mFBbO3jtDJ6uh+XgXJgThls25OpQB8eBd3KvqpfBoxNmZTiSe0sLw4oJiDD8XorjDf6CyW65R0y+jSIgncRW9moTgszCnqKUf9S5obG3SYgCTYwYZxGuChNREgLxd2i6R1SyDoeWQpmfO5gJBWNdMaqrco0dIVD6hOxXFP0WG8U9mWaxyShy+E6tZw+nyTJsKysbwN4Q5gK6GLujKC3Qa6KJUnY=
-  file: $RELEASE_FILENAME
+  file:
+    - $RELEASE_FILENAME.zip
+    - $RELEASE_FILENAME-etc1.zip
   skip_cleanup: true
   on:
     tags: true
