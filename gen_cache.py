@@ -3,7 +3,7 @@ import urllib.request, urllib.error, urllib.parse
 import xml.etree.ElementTree as ET
 from binascii import hexlify, unhexlify
 from PIL import Image
-import os, ssl, json, unicodedata
+import os, sys, ssl, json, unicodedata, getopt
 
 
 # Client certs
@@ -20,7 +20,8 @@ with open('encTitleKeys.bin', 'rb') as f:
 		f.seek(8, os.SEEK_CUR)
 		title_id = f.read(8)
 		title_key = f.read(16)
-		enc_title_keys[hexlify(title_id).decode()] = hexlify(title_key).decode()
+		enc_title_keys[hexlify(title_id).decode().upper()] = hexlify(title_key).decode()
+json_data = {}
 
 
 def get_id_pairs(ids, get_content_id = True):
@@ -37,7 +38,6 @@ def get_id_pairs(ids, get_content_id = True):
 		ret += get_id_pairs(ids[:limit], get_content_id)
 		ret += get_id_pairs(ids[limit:], get_content_id)
 	else:
-		ids = [x.upper() for x in ids]
 		try:
 			# key = 'title_id' if get_content_id else 'ns_uid'
 			shop_request = urllib.request.Request(ninja_url + "?{}[]=".format(from_key) + ','.join(ids))
@@ -45,8 +45,8 @@ def get_id_pairs(ids, get_content_id = True):
 			response = urllib.request.urlopen(shop_request, context=ctr_context)
 			xml = ET.fromstring(response.read().decode('UTF-8', 'replace'))
 			for el in xml.findall('*/title_id_pair'):
-				index = ids.index(el.find(from_key).text.upper())
-				ret[index] = el.find(to_key).text.upper()
+				index = ids.index(el.find(from_key).text)
+				ret[index] = el.find(to_key).text
 		except urllib.error.URLError as e:
 			print(e)
 
@@ -68,7 +68,7 @@ def get_title_data(id, uid):
 	# 4 - Country code
 	# 5 - Size
 	# 6 - Icon url (to later be replaced by icon index)
-	# 7 - Crypto seed (sometimes empty '')
+	# 7 - Title version
 
 	# samurai handles metadata actions, including getting a title's info
 	# URL regions are by country instead of geographical regions... for some reason
@@ -108,15 +108,11 @@ def get_title_data(id, uid):
 
 	xml = ET.fromstring(ec_response.read().decode('UTF-8', 'replace'))
 	title_size = int(xml.find("*/content_size").text)
-	try:
-		crypto_seed = xml.find(".//external_seed").text
-		print("Seed:", crypto_seed)
-	except:
-		crypto_seed = ''
+	title_version = int(xml.find("*/title_version").text)
 
 	title_normalized = normalize_text(title_name)
 
-	return [title_name, title_normalized, uid, regions, country_code, title_size, icon_url, crypto_seed]
+	return [title_name, title_normalized, uid, regions, country_code, title_size, icon_url, title_version]
 
 
 # Fit 441 48x48 icons per 1024x1024 image
@@ -136,8 +132,7 @@ def compile_texture(data):
 			print("No data? ", title)
 		else:
 			icon_url = title_data[6]
-			if icon_url != -1:
-				print(icon_url)
+			if isinstance(icon_url, str):
 				res = urllib.request.urlopen(icon_url, context=ctr_context)
 				img = Image.open(res)
 				if img.size != (48, 48):
@@ -155,22 +150,23 @@ def compile_texture(data):
 				icon_index += 1
 
 	for i, img in enumerate(img_array):
-		img.save("images/icons{}.png".format(i))
-		img.save("images/icons{}.jpg".format(i), quality=90)
+		img.save("images/icons{}.png".format(i), optimize=True)
+		img.save("images/icons{}.jpg".format(i), quality=85, optimize=True)
 
 
 def filter_titles(titles):
 	ret = []
 	tid_index = ['00040000']
 	for title_id in titles:
-		tid_high = title_id.upper()[:8]
+		tid_high = title_id[:8]
 		if tid_high in tid_index:
 			ret.append(title_id)
 	return ret
 
 
 def scrape():
-	data = {}
+	global json_data
+
 	titles = list(enc_title_keys.keys())
 	titles = filter_titles(titles)
 
@@ -182,21 +178,65 @@ def scrape():
 		else:
 			title_data = get_title_data(titles[i], uid)
 			if title_data:
-				data[titles[i]] = title_data
+				json_data[titles[i]] = title_data
 				print("Title {} out of {}: {} ({})".format(i+1, len(uid_list), title_data[0], title_data[1]))
 
 	with open('data.json', 'w') as f:
-		json.dump(data, f, separators=(',', ':'))
+		json.dump(json_data, f, separators=(',', ':'))
 
 
 def texture_from_json():
 	with open("data.json") as f:
-		data = json.load(f)
-	compile_texture(data)
+		json_data = json.load(f)
+	compile_texture(json_data)
 	with open('data.json', 'w') as f:
-		json.dump(data, f, separators=(',', ':'))
+		json.dump(json_data, f, separators=(',', ':'))
+
+
+def load_cache(input_dir):
+	global icon_index
+	global img_index
+	global json_data
+
+	with open(os.path.join(input_dir, "data.json")) as f:
+		json_data = json.load(f)
+	max_icon_index = max(json_data, key=(lambda x: json_data[x][6]))
+	icon_index = json_data[max_icon_index][6] + 1
+	img_index = int(icon_index / 441)
+	for i in range(img_index + 1):
+		img_array.append(Image.open(os.path.join(input_dir, "images/icons{}.png".format(i))))
+	for i in list(json_data.keys()):
+		enc_title_keys.pop(i, None)
+
+	titles = list(enc_title_keys.keys())
+	titles = filter_titles(titles)
+
+	scrape()
+	texture_from_json()
+
+
+def show_usage_exit():
+	print('gen_cache.py -i <input directory>')
+	sys.exit(2)
+
+
+def main(argv):
+	input_dir = None
+	try:
+		opts, args = getopt.getopt(argv, "hi:")
+	except getopt.GetoptError:
+		show_usage_exit()
+	for opt, arg in opts:
+		if opt == '-h':
+			show_usage_exit()
+		elif opt in ("-i", "--input"):
+			input_dir = arg
+	if input_dir:
+		load_cache(input_dir)
+	else:
+		scrape()
+		texture_from_json()
 
 
 if __name__ == '__main__':
-	scrape()
-	texture_from_json()
+	main(sys.argv[1:])
