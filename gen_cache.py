@@ -156,7 +156,7 @@ def compile_texture(data):
 
 def filter_titles(titles):
 	ret = []
-	tid_index = ['00040000']
+	tid_index = ['00040000','00048004']
 	for title_id in titles:
 		tid_high = title_id[:8]
 		if tid_high in tid_index:
