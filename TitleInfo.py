@@ -27,6 +27,8 @@ class TitleInfo:
 		self.vote_count = 0
 		self.release_date = None
 		self.product_code = None
+		self.platform = None
+		self.publisher = None
 
 		self.icon = None
 		self.logger = logging.getLogger()
@@ -47,7 +49,7 @@ class TitleInfo:
 		return [self.name, self.name_normalized, self.uid, self.regions,
 		        self.country_code, self.size, self.icon_index, self.seed, self.genres,
 		        self.languages, self.features, self.vote_score, self.vote_count,
-		        self.release_date, self.product_code]
+		        self.release_date, self.product_code, self.platform, self.publisher]
 
 
 	@staticmethod
@@ -158,6 +160,10 @@ class TitleInfo:
 				self.icon = Image.open(res)
 			except:
 				self.logger.warn("No icon for title {} {}".format(self.id, self.name))
+
+		# Get platform and publisher
+		self.platform = int(xml.find("*/platform").attrib['id'])
+		self.publisher = int(xml.find("*/publisher").attrib['id'])
 
 		# Get genres
 		genres = xml.find("*/genres")
