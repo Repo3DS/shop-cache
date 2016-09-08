@@ -4,6 +4,7 @@ from binascii import hexlify, unhexlify
 from Crypto.Cipher import AES
 from PIL import Image
 from IconManager import IconManager
+from datetime import datetime, timezone
 import sys, logging, struct, hashlib, math, unicodedata
 import common
 
@@ -149,7 +150,7 @@ class TitleInfo:
 		xml = ET.fromstring(title_response.read().decode('UTF-8', 'replace'))
 		self.product_code = xml.find("*/product_code").text
 		if not self.name:
-			self.name = xml.find("*/name").text.replace('\n', ' ')
+			self.name = xml.find("*/name").text.replace('\n', ' ').strip()
 			self.name_normalized = TitleInfo.normalize_text(self.name)
 
 		# Fetch icon if it wasn't already (for DSiWare games atm)
@@ -201,6 +202,8 @@ class TitleInfo:
 			except:
 				pass
 		self.release_date = 0 if not date else int(date.replace(tzinfo=timezone.utc).timestamp())
+		if self.release_date == 0:
+			self.logger.warn("No release date for: {} {}".format(self.id, self.name))
 
 		# Get size and seed
 		xml = ET.fromstring(ec_response.read().decode('UTF-8', 'replace'))
