@@ -3,20 +3,27 @@ sudo: false
 python:
 - '3.5'
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-6
+
 install:
 - pip install -r requirements.txt
-- wget -q https://github.com/Repo3DS/shop-cache/releases/download/r1/textool
+- wget -q https://github.com/Cruel/3dstex/releases/download/1.1/3dstex-linux-x64
 - wget -q $TITLEKEYSURL -O encTitleKeys.bin
 - wget -q $PREVCACHEURL -O cache.tar.gz
 - echo -e $CTRCERT > ctr-common-1.crt
 - echo -e $CTRKEY > ctr-common-1.key
-- chmod +x textool
+- chmod +x 3dstex-linux-x64
 - mkdir -p cache
 - tar -xaf cache.tar.gz -C cache
 
 script:
 - ./gen_cache.py -i cache
-- for f in images/*.png; do echo "Compressing $f ..."; ./textool $f ${f%.*}.bin; done
+- ./3dstex-linux-x64 -bro etc1 images/*.png
 
 before_deploy:
 - export RELEASE_FILENAME=cache-$TRAVIS_TAG
