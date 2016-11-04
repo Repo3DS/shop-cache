@@ -207,11 +207,15 @@ class TitleInfo:
 
 		# Get size and seed
 		xml = ET.fromstring(ec_response.read().decode('UTF-8', 'replace'))
+		has_seed = False
+		self.seed = ''
 		self.size = int(xml.find("*/content_size").text)
 		try:
+			has_seed = xml.find(".//seed_published").text
 			self.seed = xml.find(".//external_seed").text
 		except:
-			self.seed = ''
+			if has_seed:
+				raise ValueError("Seed not published. Excluding: {} {}".format(self.id, self.name))
 
 
 	# On success, defines: name, regions, icon_index
