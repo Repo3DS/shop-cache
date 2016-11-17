@@ -146,7 +146,10 @@ class TitleInfo:
 		if not self.regions or not title_response:
 			raise ValueError("No region or country code for {}".format(self.id))
 
-		ec_response = urllib.request.urlopen(common.ninja_url + self.country_code + '/title/' + self.uid + '/ec_info', context=common.ctr_context)	
+		# Use JP region for later timezone for pre-releases (this was added for Pokemon S/M lol)
+		ec_country_code = 'JP' if (self.regions & common.region_map['JP']) else self.country_code
+
+		ec_response = urllib.request.urlopen(common.ninja_url + ec_country_code + '/title/' + self.uid + '/ec_info', context=common.ctr_context)
 		xml = ET.fromstring(title_response.read().decode('UTF-8', 'replace'))
 		self.product_code = xml.find("*/product_code").text
 		if not self.name:
