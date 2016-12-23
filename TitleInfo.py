@@ -128,6 +128,8 @@ class TitleInfo:
 				self.name = None
 			elif self.regions & common.region_map['JP']:
 				self.country_code = 'JP'
+			elif self.regions & common.region_map['KO']:
+				self.country_code = 'KR'
 			else:
 				self.logger.error("Region value {} for {}?".format(self.regions, self.id))
 				return

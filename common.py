@@ -10,7 +10,7 @@ region_map = {'JP':1<<0, 'US':1<<1, 'EU':1<<2, 'AU':1<<3, 'CN':1<<4, 'KO':1<<5, 
 samurai_url = 'https://samurai.ctr.shop.nintendo.net/samurai/ws/'
 ninja_url = 'https://ninja.ctr.shop.nintendo.net/ninja/ws/'
 
-region_array = ['JP', 'US', 'GB', 'DE', 'FR', 'ES', 'NL', 'IT', 'SE', 'AU', 'PT'] # 'HK', 'TW', 'KR']
+region_array = ['JP', 'US', 'GB', 'DE', 'FR', 'ES', 'NL', 'IT', 'SE', 'AU', 'PT', 'KR'] # 'HK', 'TW']
 region_euro_array = ['GB', 'DE', 'FR', 'ES', 'NL', 'IT', 'SE', 'AU', 'PT']
 
 icon_manager = IconManager()
