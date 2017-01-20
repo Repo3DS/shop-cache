@@ -130,6 +130,10 @@ class TitleInfo:
 				self.country_code = 'JP'
 			elif self.regions & common.region_map['KO']:
 				self.country_code = 'KR'
+			elif self.regions & common.region_map['CN']:
+				self.country_code = 'HK'
+			elif self.regions & common.region_map['TW']:
+				self.country_code = 'TW'
 			else:
 				self.logger.error("Region value {} for {}?".format(self.regions, self.id))
 				return
